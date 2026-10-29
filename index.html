@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop-API</title>
+<style>
+body { margin:0; background:#0d0906; color:#ffd700; font-family:Arial,sans-serif; display:flex; flex-direction:column; align-items:center; min-height:100vh; }
+.mult-banner { background:linear-gradient(#5a3a1a,#3d2b1f); border:4px solid #c9a227; border-radius:15px 15px 5px 5px; padding:6px 20px; margin:10px 0 5px; display:flex; gap:18px; font-size:1.7em; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.6); position:relative; }
+.mult-banner::before { content:''; position:absolute; left:10px; top:-8px; width:8px; height:15px; background:#8b6914; border-radius:2px; }
+.mult-banner::after { content:''; position:absolute; right:10px; top:-8px; width:8px; height:15px; background:#8b6914; border-radius:2px; }
+.mult-banner span { opacity:0.35; }
+.mult-banner span.on { opacity:1; color:#fff; text-shadow:0 0 12px #ff0; transform:scale(1.15); }
+.game { width:370px; background:linear-gradient(#2d1b0e,#1a120b); border:5px solid #c9a227; border-radius:18px; padding:8px; position:relative; box-shadow:0 0 25px rgba(201,162,39,0.4); }
+.ways-left, .ways-right { position:absolute; top:70px; font-size:0.7em; color:#aaa; writing-mode:vertical-rl; transform:rotate(180deg); font-weight:bold; }
+.ways-left { left:4px; }
+.ways-right { right:4px; transform:rotate(0deg); }
+.reels { display:flex; justify-content:center; align-items:flex-end; height:360px; background:#120c08; border-radius:10px; overflow:hidden; margin-top:30px; }
+.reel { display:flex; flex-direction:column-reverse; margin:0 1px; }
+.sym { width:54px; height:54px; display:flex; align-items:center; justify-content:center; font-size:28px; background:#1f150f; border:2px solid #4a3728; border-radius:5px; margin:1px 0; font-weight:bold; text-shadow:1px 1px 2px #000; }
+.sym.gold { border:3px solid #ffd700; box-shadow:0 0 12px #ffd700, inset 0 0 6px #ffd700; }
+.j { color:#4a90e2; } .q { color:#50c878; } .k { color:#e74c3c; } .a { color:#f1c40f; }
+.buy { position:absolute; right:10px; top:250px; background:linear-gradient(#5a3a1a,#3d2b1f); border:3px solid #c9a227; padding:10px 6px; border-radius:8px; font-size:0.75em; text-align:center; cursor:pointer; font-weight:bold; line-height:1.2; }
+.bottom-sign { background:linear-gradient(#5a3a1a,#3d2b1f); border:3px solid #c9a227; border-radius:8px; padding:6px; margin:8px 10px; text-align:center; font-size:0.85em; font-weight:bold; }
+.controls { display:flex; justify-content:space-around; align-items:center; margin:6px; }
+.bal, .betd { text-align:center; font-size:0.85em; }
+button { background:#c9a227; border:2px solid #ffd700; color:#1a120b; border-radius:50%; width:48px; height:48px; font-size:1.3em; cursor:pointer; }
+.spin { width:85px; height:85px; font-size:2.2em; background:radial-gradient(#c9a227,#8b6914); border:4px solid #ffd700; }
+.info { font-size:0.65em; color:#aaa; text-align:center; margin:6px; max-width:370px; }
+</style>
+</head>
+<body>
+<div class="mult-banner" id="mult"><span>x512</span><span>x1024</span><span class="on">x1</span><span>x2</span><span>x4</span></div>
+<div class="game">
+  <div class="ways-left">3600 ĐƯỜNG</div>
+  <div class="ways-right">3600 ĐƯỜNG</div>
+  <div class="reels" id="reels"></div>
+  <div class="buy" onclick="alert('Tính năng mua: 10 Free Spins (mô phỏng)')">TÍNH NĂNG<br>MUA</div>
+  <div class="bottom-sign">Thắng tới 3600 đường!</div>
+  <div class="controls">
+    <div class="bal">SỐ DƯ<br><b id="bal">101.00</b></div>
+    <button onclick="changeBet(-1)">−</button>
+    <button class="spin" onclick="spin()">↻</button>
+    <button onclick="changeBet(1)">+</button>
+    <div class="betd">CƯỢC<br><b id="bet">0.40</b></div>
+  </div>
+</div>
+<div class="info">Mô phỏng giải trí - Không tiền thật. Tỉ lệ thắng thấp.</div>
+<script>
+const H=[3,4,5,5,4,3];
+const E={bandit:'🤠',pistol:'🔫',hat:'🎩',bottle:'🥃',A:'A',K:'K',Q:'Q',J:'J',wild:'⭐',scatter:'💰'};
+const W={bandit:2,pistol:3,hat:5,bottle:5,A:18,K:18,Q:22,J:22,wild:1,scatter:1};
+let bal=101, bet=0.4, grid=[], spinning=false;
+function rnd(){let t=Object.values(W).reduce((a,b)=>a+b),r=Math.random()*t;for(let[s,w]of Object.entries(W)){if(r<w)return s;r-=w;}return'J';}
+function make(){return H.map(h=>Array(h).fill().map(()=>({s:rnd(),g:false})));}
+function render(){const r=document.getElementById('reels');r.innerHTML='';grid.forEach(reel=>{const d=document.createElement('div');d.className='reel';reel.forEach(c=>{const s=document.createElement('div');s.className='sym '+(c.s.toLowerCase())+(c.g?' gold':'');s.textContent=E[c.s]||c.s;d.appendChild(s);});r.appendChild(d);});}
+function changeBet(d){bet=Math.max(0.2,Math.min(100,+(bet+d*0.2).toFixed(2)));document.getElementById('bet').textContent=bet.toFixed(2);}
+function spin(){if(spinning||bal<bet)return;spinning=true;bal-=bet;document.getElementById('bal').textContent=bal.toFixed(2);
+  let i=0;const t=setInterval(()=>{grid=make();render();if(++i>15){clearInterval(t);grid=make();[2,3].forEach(r=>grid[r].forEach(c=>{if(Math.random()<0.25)c.g=true;}));render();spinning=false;}},60);}
+grid=make();render();
+</script>
+<script id="ck-may-chu">
+(function(){
+  var KEY='ck-du-lieu';
+  function localRead(){ try { return JSON.parse(localStorage.getItem(KEY)||'{}'); } catch(e){ return {}; } }
+  function localWrite(db){ localStorage.setItem(KEY, JSON.stringify(db)); }
+  async function remote(){
+    try { var r = await fetch('/api/du-lieu'); if(!r.ok) return null; return await r.json(); } catch(e){ return null; }
+  }
+  window.mayChu = {
+    sanSang: true,
+    async lay(k){ var db = await remote(); if(!db) db = localRead(); return k ? db[k] : db; },
+    async luu(k,v){
+      var db = await remote(); if(!db) db = localRead();
+      db[k]=v;
+      try {
+        var res = await fetch('/api/du-lieu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(db)});
+        if(res.ok) return db;
+      } catch(e) {}
+      localWrite(db); return db;
+    },
+    async xoa(k){ var db = await remote(); if(!db) db = localRead(); delete db[k]; try { var res = await fetch('/api/du-lieu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(db)}); if(res.ok) return db; } catch(e) {} localWrite(db); return db; }
+  };
+})();
+</script>
+</body>
+</html>
